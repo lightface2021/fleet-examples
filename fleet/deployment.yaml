@@ -19,7 +19,7 @@ spec:
         spec:
             initContainers:
                 - name: code
-                  image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+                  image: 54.236.67.117:5000/vas-qqc-api-code:25
                   imagePullPolicy: IfNotPresent
                   command: ['sh', '-c', "cp -rf /src/. /src-www && chown -R www-data:www-data /src-www"]
                   volumeMounts:
