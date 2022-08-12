@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: qqc-api
+    labels:
+        project: qqc-api
+        env: prod
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            project: qqc-api
+            env: prod
+    template:
+        metadata:
+            labels:
+                project: qqc-api
+                env: prod
+        spec:
+            initContainers:
+                - name: code
+                  image: 54.236.67.117:5000/vas-qqc-api-code:25
+                  imagePullPolicy: IfNotPresent
+                  command: ['sh', '-c', "cp -rf /src/. /src-www && chown -R www-data:www-data /src-www"]
+                  volumeMounts:
+                      - name: wwwroot
+                        mountPath: /src-www
+            #hostNetwork: true
+            #dnsPolicy: Default
+            containers:
+                - image: progrium/busybox
+                  command:
+                      - sleep
+                      - "3600"
+                  imagePullPolicy: IfNotPresent
+                  name: busybox
+                - name: php
+                  image: 54.236.67.117:5000/qqc_php:v1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                      - name: wwwroot
+                        mountPath: /home/www
+                  ports:
+                      - containerPort: 9000
+                - name: nginx
+                  image: 54.236.67.117:5000/qqc_nginx:v1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                      - name: wwwroot
+                        mountPath: /home/www
+                  ports:
+                      - containerPort: 80
+            volumes:
+                - name: wwwroot
+                  emptyDir: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+    name: qqc-api-svc
+    labels:
+        project: qqc-api
+        env: prod
+spec:
+    selector:
+        project: qqc-api
+        env: prod
+    ports:
+        - port: 8080
+          targetPort: 80
+            #nodePort: 30405
+          protocol: TCP
+    #type: NodePort
+    type: ClusterIP
