@@ -19,7 +19,7 @@ spec:
         spec:
             initContainers:
                 - name: code
-                  image: 54.236.67.117:5000/vas-qqc-api-code:25
+                  image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
                   imagePullPolicy: IfNotPresent
                   command: ['sh', '-c', "cp -rf /src/. /src-www && chown -R www-data:www-data /src-www"]
                   volumeMounts:
@@ -27,13 +27,9 @@ spec:
                         mountPath: /src-www
             #hostNetwork: true
             #dnsPolicy: Default
-            containers:
-                - image: progrium/busybox
-                  command:
-                      - sleep
-                      - "3600"
-                  imagePullPolicy: IfNotPresent
-                  name: busybox
+            imagePullSecrets:
+            - name: pipeline-docker-registry
+            containers:                
                 - name: php
                   image: 54.236.67.117:5000/qqc_php:v1
                   imagePullPolicy: IfNotPresent
@@ -74,3 +70,23 @@ spec:
           protocol: TCP
     #type: NodePort
     type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qqc-ingress
+spec:
+  ingressClassName: nginx  # 使用 nginx 的 IngressClass（关联的 ingress-nginx 控制器）
+  rules:
+  - host: "*.qqcapi2.com"  # 将域名映射到 my-nginx 服务
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:  # 将所有请求发送到 my-nginx 服务的 80 端口
+            name: qqc-api-svc
+            port:
+              number: 8080
